@@ -1,5 +1,6 @@
 package it.wsbuzz.backend.room.dto;
 
+import it.wsbuzz.backend.room.RoomMode;
 import java.util.List;
 
 /**
@@ -7,4 +8,9 @@ import java.util.List;
  * Rispecchia 1:1 {@code Room} lato frontend (room.model.ts).
  */
 public record RoomView(
-    String code, String hostId, long createdAt, boolean locked, List<PlayerView> players) {}
+    String code,
+    String hostId,
+    long createdAt,
+    boolean locked,
+    RoomMode mode,
+    List<PlayerView> players) {}

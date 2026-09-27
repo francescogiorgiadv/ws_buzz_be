@@ -8,7 +8,8 @@ prenotazioni (buzz) in tempo reale.
 - **Java 21** (virtual threads abilitati, `spring.threads.virtual.enabled=true`)
 - **Spring Boot 4.1.1**
 - **REST** per le operazioni one-shot: creazione stanza, join
-- **WebSocket (STOMP)** per gli eventi live: buzz, reset round, lock, leave
+- **WebSocket (STOMP)** per gli eventi live: buzz, reset round, lock, cambio modalita',
+  scelta multipla, definizioni, leave
 - **Nessun database**: lo stato delle stanze vive interamente in memoria
   (`ConcurrentHashMap` in [`RoomService`](src/main/java/it/wsbuzz/backend/room/RoomService.java)).
   Un riavvio del processo azzera tutte le stanze attive — scelta deliberata per
@@ -53,9 +54,15 @@ evento. Gli errori arrivano sulla coda utente `/user/queue/errors`.
 
 | Destinazione invio | Payload | Descrizione |
 |---|---|---|
-| `/app/rooms/{code}/buzz` | `{ "playerId": "..." }` | Prenotazione: blocca il buzzer per tutti |
-| `/app/rooms/{code}/reset` | `{ "playerId": "<hostId>" }` | Solo host: nuovo round, sblocca e azzera i buzz |
+| `/app/rooms/{code}/buzz` | `{ "playerId": "..." }` | Prenotazione: in `FASTEST` blocca il buzzer per tutti, in `LEADERBOARD` resta aperto |
+| `/app/rooms/{code}/reset` | `{ "playerId": "<hostId>" }` | Solo host: nuovo round, sblocca e azzera buzz e scelte multiple |
 | `/app/rooms/{code}/lock` | `{ "requesterId": "<hostId>", "locked": true }` | Solo host: lock/unlock manuale |
+| `/app/rooms/{code}/mode` | `{ "requesterId": "<hostId>", "mode": "FASTEST" \| "LEADERBOARD" \| "DEFINITIONS" \| "MULTIPLE_CHOICE" }` | Solo host: cambia la modalita' della stanza |
+| `/app/rooms/{code}/choice` | `{ "playerId": "...", "choice": "A" \| "B" \| "C" \| "D" }` | Modalita' `MULTIPLE_CHOICE`: registra la risposta scelta (una sola volta a round) |
+| `/app/rooms/{code}/definition/update` | `{ "playerId": "...", "text": "..." }` | Modalita' `DEFINITIONS`: aggiorna live il testo (max 1000 caratteri), non permesso dopo la conferma |
+| `/app/rooms/{code}/definition/confirm` | `{ "playerId": "..." }` | Conferma la definizione corrente: da quel momento non e' piu' modificabile |
+| `/app/rooms/{code}/definition/unlock` | `{ "requesterId": "<hostId>", "playerId": "..." \| null }` | Solo host: sblocca (e azzera) l'area di un giocatore, o di tutti se `playerId` e' `null` |
+| `/app/rooms/{code}/refresh` | `{ "playerId": "..." }` | Richiede un re-broadcast dello snapshot corrente della stanza |
 | `/app/rooms/{code}/leave` | `{ "playerId": "..." }` | Il giocatore lascia la stanza (se e' l'host, la stanza si chiude) |
 
 ## Note / debito tecnico

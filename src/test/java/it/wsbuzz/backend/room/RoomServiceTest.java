@@ -53,6 +53,31 @@ class RoomServiceTest {
   }
 
   @Test
+  void buzz_inLeaderboardMode_doesNotLockRoom() {
+    RoomJoinedResponse created = roomService.createRoom("Host");
+    String code = created.room().code();
+    RoomJoinedResponse joined = roomService.joinRoom(code, "Player 1");
+    RoomJoinedResponse joined2 = roomService.joinRoom(code, "Player 2");
+
+    roomService.setMode(code, created.playerId(), RoomMode.LEADERBOARD);
+    RoomView afterFirstBuzz = roomService.buzz(code, joined.playerId());
+    assertThat(afterFirstBuzz.locked()).isFalse();
+
+    RoomView afterSecondBuzz = roomService.buzz(code, joined2.playerId());
+    assertThat(afterSecondBuzz.players()).allMatch(p -> p.isHost() || p.buzzedAt() != null);
+  }
+
+  @Test
+  void setMode_byNonHost_throws() {
+    RoomJoinedResponse created = roomService.createRoom("Host");
+    String code = created.room().code();
+    RoomJoinedResponse joined = roomService.joinRoom(code, "Player 1");
+
+    assertThatThrownBy(() -> roomService.setMode(code, joined.playerId(), RoomMode.LEADERBOARD))
+        .isInstanceOf(InvalidRoomOperationException.class);
+  }
+
+  @Test
   void resetRound_unlocksAndClearsBuzzes() {
     RoomJoinedResponse created = roomService.createRoom("Host");
     String code = created.room().code();
