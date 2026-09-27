@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Eclipse output folder (copia accidentale dell'intero progetto) ###
+/bin/
