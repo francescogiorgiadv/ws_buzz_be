@@ -39,7 +39,7 @@ public class Room {
   public synchronized PlayerView addHost(String name) {
     PlayerView host =
         new PlayerView(
-            newPlayerId(), name, true, System.currentTimeMillis(), null, "", false, null);
+            newPlayerId(), name, true, System.currentTimeMillis(), null, "", false, null, 0);
     this.hostId = host.id();
     players.put(host.id(), host);
     return host;
@@ -48,7 +48,7 @@ public class Room {
   public synchronized PlayerView addPlayer(String name) {
     PlayerView player =
         new PlayerView(
-            newPlayerId(), name, false, System.currentTimeMillis(), null, "", false, null);
+            newPlayerId(), name, false, System.currentTimeMillis(), null, "", false, null, 0);
     players.put(player.id(), player);
     return player;
   }
@@ -151,6 +151,30 @@ public class Room {
     players.put(playerId, withChoice(player, choice));
   }
 
+  /** Sblocca la scelta di un singolo giocatore, permettendogli di rispondere di nuovo. */
+  public synchronized void unlockChoice(String playerId) {
+    PlayerView player = requirePlayer(playerId);
+    players.put(playerId, withChoice(player, null));
+  }
+
+  /** Sblocca la scelta di tutti i giocatori. */
+  public synchronized void unlockAllChoices() {
+    players.replaceAll((id, player) -> withChoice(player, null));
+  }
+
+  /**
+   * Modifica il punteggio di un concorrente di {@code delta} punti. Il
+   * punteggio sopravvive ai nuovi round e ai cambi di modalita'. L'host non
+   * ha punteggio.
+   */
+  public synchronized void adjustScore(String playerId, int delta) {
+    PlayerView player = requirePlayer(playerId);
+    if (player.isHost()) {
+      throw new InvalidRoomOperationException("L'host non ha un punteggio");
+    }
+    players.put(playerId, withScore(player, player.score() + delta));
+  }
+
   public synchronized boolean isHost(String playerId) {
     return hostId != null && hostId.equals(playerId);
   }
@@ -180,7 +204,8 @@ public class Room {
         buzzedAt,
         player.definition(),
         player.definitionConfirmed(),
-        player.choice());
+        player.choice(),
+        player.score());
   }
 
   private static PlayerView withDefinition(PlayerView player, String definition, boolean confirmed) {
@@ -192,7 +217,8 @@ public class Room {
         player.buzzedAt(),
         definition,
         confirmed,
-        player.choice());
+        player.choice(),
+        player.score());
   }
 
   private static PlayerView withChoice(PlayerView player, String choice) {
@@ -204,7 +230,21 @@ public class Room {
         player.buzzedAt(),
         player.definition(),
         player.definitionConfirmed(),
-        choice);
+        choice,
+        player.score());
+  }
+
+  private static PlayerView withScore(PlayerView player, int score) {
+    return new PlayerView(
+        player.id(),
+        player.name(),
+        player.isHost(),
+        player.joinedAt(),
+        player.buzzedAt(),
+        player.definition(),
+        player.definitionConfirmed(),
+        player.choice(),
+        score);
   }
 
   private static String newPlayerId() {

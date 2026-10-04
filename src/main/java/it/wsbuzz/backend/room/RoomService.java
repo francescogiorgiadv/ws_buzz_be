@@ -117,6 +117,37 @@ public class RoomService {
     return room.snapshot();
   }
 
+  /** Sblocca la scelta di un giocatore (o di tutti, se {@code targetPlayerId} e' null). Solo host. */
+  public RoomView unlockChoice(String code, String requesterId, String targetPlayerId) {
+    Room room = requireRoom(code);
+    requireHost(room, requesterId);
+    if (targetPlayerId == null) {
+      room.unlockAllChoices();
+      log.info("Scelte sbloccate per tutti: code={} host={}", code, requesterId);
+    } else {
+      room.unlockChoice(targetPlayerId);
+      log.info("Scelta sbloccata: code={} host={} playerId={}", code, requesterId, targetPlayerId);
+    }
+    return room.snapshot();
+  }
+
+  /** Aumenta o diminuisce di 1 il punteggio di un concorrente. Solo host. */
+  public RoomView adjustScore(String code, String requesterId, String targetPlayerId, int delta) {
+    Room room = requireRoom(code);
+    requireHost(room, requesterId);
+    if (delta != 1 && delta != -1) {
+      throw new InvalidRoomOperationException("Il punteggio puo' variare solo di +1 o -1");
+    }
+    room.adjustScore(targetPlayerId, delta);
+    log.info(
+        "Punteggio modificato: code={} host={} playerId={} delta={}",
+        code,
+        requesterId,
+        targetPlayerId,
+        delta);
+    return room.snapshot();
+  }
+
   /**
    * Un giocatore lascia la stanza. Se era l'host, per semplicita' la stanza
    * viene chiusa (nessun trasferimento di ruolo host in questa fase). Se la

@@ -12,4 +12,5 @@ public record PlayerView(
     Long buzzedAt,
     String definition,
     boolean definitionConfirmed,
-    String choice) {}
+    String choice,
+    int score) {}

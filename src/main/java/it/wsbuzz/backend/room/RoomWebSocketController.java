@@ -8,6 +8,7 @@ import it.wsbuzz.backend.room.dto.LockRequest;
 import it.wsbuzz.backend.room.dto.ModeRequest;
 import it.wsbuzz.backend.room.dto.PlayerActionRequest;
 import it.wsbuzz.backend.room.dto.RoomView;
+import it.wsbuzz.backend.room.dto.ScoreRequest;
 import jakarta.validation.Valid;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -64,6 +65,13 @@ public class RoomWebSocketController {
     broadcast(code, room);
   }
 
+  @MessageMapping("/rooms/{code}/choice/unlock")
+  public void unlockChoice(
+      @DestinationVariable String code, @Valid @Payload DefinitionUnlockRequest request) {
+    RoomView room = roomService.unlockChoice(code, request.requesterId(), request.playerId());
+    broadcast(code, room);
+  }
+
   @MessageMapping("/rooms/{code}/definition/update")
   public void updateDefinition(
       @DestinationVariable String code, @Valid @Payload DefinitionUpdateRequest request) {
@@ -82,6 +90,13 @@ public class RoomWebSocketController {
   public void unlockDefinition(
       @DestinationVariable String code, @Valid @Payload DefinitionUnlockRequest request) {
     RoomView room = roomService.unlockDefinition(code, request.requesterId(), request.playerId());
+    broadcast(code, room);
+  }
+
+  @MessageMapping("/rooms/{code}/score")
+  public void adjustScore(@DestinationVariable String code, @Valid @Payload ScoreRequest request) {
+    RoomView room =
+        roomService.adjustScore(code, request.requesterId(), request.playerId(), request.delta());
     broadcast(code, room);
   }
 

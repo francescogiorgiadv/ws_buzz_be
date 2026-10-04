@@ -101,6 +101,40 @@ class RoomServiceTest {
   }
 
   @Test
+  void adjustScore_incrementsAndDecrementsAndSurvivesReset() {
+    RoomJoinedResponse created = roomService.createRoom("Host");
+    String code = created.room().code();
+    RoomJoinedResponse joined = roomService.joinRoom(code, "Player 1");
+
+    roomService.adjustScore(code, created.playerId(), joined.playerId(), 1);
+    roomService.adjustScore(code, created.playerId(), joined.playerId(), 1);
+    roomService.adjustScore(code, created.playerId(), joined.playerId(), -1);
+    RoomView afterReset = roomService.resetRound(code, created.playerId());
+
+    assertThat(afterReset.players())
+        .filteredOn(p -> p.id().equals(joined.playerId()))
+        .singleElement()
+        .satisfies(p -> assertThat(p.score()).isEqualTo(1));
+  }
+
+  @Test
+  void adjustScore_byNonHostOrOnHostOrInvalidDelta_throws() {
+    RoomJoinedResponse created = roomService.createRoom("Host");
+    String code = created.room().code();
+    RoomJoinedResponse joined = roomService.joinRoom(code, "Player 1");
+
+    assertThatThrownBy(
+            () -> roomService.adjustScore(code, joined.playerId(), joined.playerId(), 1))
+        .isInstanceOf(InvalidRoomOperationException.class);
+    assertThatThrownBy(
+            () -> roomService.adjustScore(code, created.playerId(), created.playerId(), 1))
+        .isInstanceOf(InvalidRoomOperationException.class);
+    assertThatThrownBy(
+            () -> roomService.adjustScore(code, created.playerId(), joined.playerId(), 5))
+        .isInstanceOf(InvalidRoomOperationException.class);
+  }
+
+  @Test
   void leaveRoom_hostLeaving_closesRoom() {
     RoomJoinedResponse created = roomService.createRoom("Host");
     String code = created.room().code();
