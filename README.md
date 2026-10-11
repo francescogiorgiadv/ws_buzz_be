@@ -36,6 +36,43 @@ mvnw.cmd spring-boot:run      # Windows
 java -jar target/backend-0.0.1-SNAPSHOT.jar
 ```
 
+## Deploy dietro reverse proxy
+
+In produzione il backend gira in HTTP sulla 8080 dietro un reverse proxy
+(Nginx/Caddy) che gestisce HTTPS. Lato backend e' gia' configurato:
+
+- `server.forward-headers-strategy=native`: gli header `X-Forwarded-*` del proxy
+  sono accettati (solo da IP interni) per ricostruire schema/host/IP reali;
+- heartbeat STOMP lato server ogni 10s ([`WebSocketConfig`](src/main/java/it/wsbuzz/backend/config/WebSocketConfig.java)),
+  cosi' il proxy non chiude il WebSocket per inattivita'.
+
+Porta e indirizzo di ascolto si cambiano senza toccare i file con le variabili
+d'ambiente standard di Spring `SERVER_PORT` e `SERVER_ADDRESS` (es.
+`SERVER_ADDRESS=127.0.0.1` se il proxy e' sulla stessa macchina, per non esporre
+la 8080 all'esterno).
+
+Esempio Nginx (il WebSocket richiede gli header `Upgrade`/`Connection`):
+
+```nginx
+location /api/ {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location /ws {
+    proxy_pass http://127.0.0.1:8080;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 120s;
+}
+```
+
 ## Endpoint
 
 ### REST — `http://localhost:8080/api/rooms`
@@ -45,6 +82,7 @@ java -jar target/backend-0.0.1-SNAPSHOT.jar
 | POST | `/api/rooms` | `{ "hostName": "..." }` | Crea una stanza, ritorna `{ room, playerId }` |
 | POST | `/api/rooms/{code}/join` | `{ "playerName": "..." }` | Un giocatore entra nella stanza |
 | GET | `/api/rooms/{code}` | — | Snapshot corrente della stanza (utile per reconnect) |
+| GET | `/api/health` | — | Diagnostica dell'installazione: da aprire dal browser con l'URL pubblico, verifica HTTPS/proxy, CORS e profilo (`status` `OK` o `WARN`, con il dettaglio di ogni controllo in `checks`) |
 
 ### WebSocket (STOMP) — endpoint `ws://localhost:8080/ws`
 
@@ -72,6 +110,12 @@ evento. Gli errori arrivano sulla coda utente `/user/queue/errors`.
   "sessione locale" gia' usato dal frontend, vedi `session.service.ts`).
 - Se l'host lascia la stanza, la stanza si chiude (nessun trasferimento di
   ruolo host implementato per ora).
-- CORS/allowed origins configurati in `application.properties`
-  (`app.cors.allowed-origins`), di default puntano al dev server Angular
-  (`http://localhost:4200`) — da aggiornare per l'hosting di produzione.
+- CORS/allowed origins (`app.cors.allowed-origins`): in produzione arrivano dalla
+  variabile d'ambiente **obbligatoria** `APP_CORS_ALLOWED_ORIGINS` (origini separate
+  da virgola, senza spazi); senza di essa l'applicazione non parte. In dev il valore
+  (`http://localhost:4200`) sta in `application-dev.properties`, profilo `dev`
+  attivato automaticamente solo da `mvn spring-boot:run`.
+
+  ```bash
+  APP_CORS_ALLOWED_ORIGINS=https://buzz.example.com java -jar target/backend-0.0.1-SNAPSHOT.jar
+  ```

@@ -76,6 +76,20 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- Solo per "mvn spring-boot:run": il jar in produzione parte senza profili. -->
+					<profiles>
+						<profile>dev</profile>
+					</profiles>
+				</configuration>
+				<executions>
+					<!-- Genera META-INF/build-info.properties (versione e data build), letta da /api/health. -->
+					<execution>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

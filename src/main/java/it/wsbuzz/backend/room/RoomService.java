@@ -48,6 +48,11 @@ public class RoomService {
     return new RoomJoinedResponse(room.snapshot(), player.id());
   }
 
+  /** Numero di stanze attualmente in memoria (diagnostica, vedi /api/health). */
+  public int activeRoomCount() {
+    return rooms.size();
+  }
+
   public RoomView getRoom(String code) {
     return requireRoom(code).snapshot();
   }
