@@ -1,0 +1,29 @@
+# Avvio locale di backend + frontend su Docker Desktop (PC Windows).
+# Le immagini vengono compilate dai Dockerfile dei due repository.
+#
+#   docker compose -f docker-compose.local.yml up -d --build    # compila e avvia/aggiorna
+#   docker compose -f docker-compose.local.yml logs -f backend  # log
+#   docker compose -f docker-compose.local.yml down             # ferma e rimuove i container
+#
+# App su http://localhost:8081 (dai telefoni in LAN: http://<IP del PC>:8081).
+
+name: ws-buzz-local
+
+services:
+  backend:
+    build: .
+    image: ws-buzz-backend:local
+    environment:
+      # Origini da cui si apre il frontend: localhost e IP del PC in LAN (QR code).
+      # Se l'IP del PC cambia: LAN_IP=192.168.x.y docker compose -f docker-compose.local.yml up -d
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:8081,http://${LAN_IP:-192.168.1.15}:8081
+    restart: unless-stopped
+
+  frontend:
+    build: ../ws_buzz
+    image: ws-buzz-frontend:local
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
