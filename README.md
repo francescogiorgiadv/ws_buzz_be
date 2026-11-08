@@ -95,8 +95,9 @@ evento. Gli errori arrivano sulla coda utente `/user/queue/errors`.
 | `/app/rooms/{code}/buzz` | `{ "playerId": "..." }` | Prenotazione: in `FASTEST` blocca il buzzer per tutti, in `LEADERBOARD` resta aperto |
 | `/app/rooms/{code}/reset` | `{ "playerId": "<hostId>" }` | Solo host: nuovo round, sblocca e azzera buzz e scelte multiple |
 | `/app/rooms/{code}/lock` | `{ "requesterId": "<hostId>", "locked": true }` | Solo host: lock/unlock manuale |
-| `/app/rooms/{code}/mode` | `{ "requesterId": "<hostId>", "mode": "FASTEST" \| "LEADERBOARD" \| "DEFINITIONS" \| "MULTIPLE_CHOICE" }` | Solo host: cambia la modalita' della stanza |
-| `/app/rooms/{code}/choice` | `{ "playerId": "...", "choice": "A" \| "B" \| "C" \| "D" }` | Modalita' `MULTIPLE_CHOICE`: registra la risposta scelta (una sola volta a round) |
+| `/app/rooms/{code}/mode` | `{ "requesterId": "<hostId>", "mode": "FASTEST" \| "LEADERBOARD" \| "DEFINITIONS" \| "MULTIPLE_CHOICE" \| "BINARY_CHOICE" }` | Solo host: cambia la modalita' della stanza (se cambia, le scelte vengono azzerate) |
+| `/app/rooms/{code}/choice` | `{ "playerId": "...", "choice": "A" \| "B" \| "C" \| "D" }` | Modalita' `MULTIPLE_CHOICE` / `BINARY_CHOICE` (solo A/B): registra la risposta scelta (una sola volta a round) |
+| `/app/rooms/{code}/true-false` | `{ "requesterId": "<hostId>", "trueFalse": true }` | Solo host: in `BINARY_CHOICE` mostra le risposte come Vero/Falso (`true`) o A/B (`false`, default) |
 | `/app/rooms/{code}/definition/update` | `{ "playerId": "...", "text": "..." }` | Modalita' `DEFINITIONS`: aggiorna live il testo (max 1000 caratteri), non permesso dopo la conferma |
 | `/app/rooms/{code}/definition/confirm` | `{ "playerId": "..." }` | Conferma la definizione corrente: da quel momento non e' piu' modificabile |
 | `/app/rooms/{code}/definition/unlock` | `{ "requesterId": "<hostId>", "playerId": "..." \| null }` | Solo host: sblocca (e azzera) l'area di un giocatore, o di tutti se `playerId` e' `null` |

@@ -23,6 +23,7 @@ public class Room {
 
   private static final int MAX_DEFINITION_LENGTH = 1000;
   private static final Set<String> VALID_CHOICES = Set.of("A", "B", "C", "D");
+  private static final Set<String> VALID_BINARY_CHOICES = Set.of("A", "B");
 
   private final String code;
   private final long createdAt;
@@ -30,6 +31,7 @@ public class Room {
   private String hostId;
   private boolean locked;
   private RoomMode mode = RoomMode.FASTEST;
+  private boolean trueFalse;
 
   public Room(String code) {
     this.code = code;
@@ -89,9 +91,21 @@ public class Room {
     this.locked = locked;
   }
 
-  /** Cambia la modalita' di gioco della stanza. Effetto solo sui prossimi buzz. */
+  /**
+   * Cambia la modalita' di gioco della stanza. Effetto solo sui prossimi buzz.
+   * Se la modalita' cambia davvero le scelte gia' fatte vengono azzerate, cosi'
+   * una risposta C/D della scelta multipla non resta appesa in scelta binaria.
+   */
   public synchronized void setMode(RoomMode mode) {
+    if (this.mode != mode) {
+      players.replaceAll((id, player) -> withChoice(player, null));
+    }
     this.mode = mode;
+  }
+
+  /** In scelta binaria mostra le due risposte come Vero/Falso invece che A/B. */
+  public synchronized void setTrueFalse(boolean trueFalse) {
+    this.trueFalse = trueFalse;
   }
 
   /**
@@ -145,7 +159,8 @@ public class Room {
     if (player.choice() != null) {
       throw new InvalidRoomOperationException("Hai gia' scelto una risposta in questo round");
     }
-    if (!VALID_CHOICES.contains(choice)) {
+    Set<String> valid = mode == RoomMode.BINARY_CHOICE ? VALID_BINARY_CHOICES : VALID_CHOICES;
+    if (!valid.contains(choice)) {
       throw new InvalidRoomOperationException("Risposta non valida");
     }
     players.put(playerId, withChoice(player, choice));
@@ -175,6 +190,11 @@ public class Room {
     players.put(playerId, withScore(player, player.score() + delta));
   }
 
+  /** Riporta a zero il punteggio di tutti i concorrenti. */
+  public synchronized void resetScores() {
+    players.replaceAll((id, player) -> withScore(player, 0));
+  }
+
   public synchronized boolean isHost(String playerId) {
     return hostId != null && hostId.equals(playerId);
   }
@@ -184,7 +204,8 @@ public class Room {
   }
 
   public synchronized RoomView snapshot() {
-    return new RoomView(code, hostId, createdAt, locked, mode, List.copyOf(players.values()));
+    return new RoomView(
+        code, hostId, createdAt, locked, mode, trueFalse, List.copyOf(players.values()));
   }
 
   private PlayerView requirePlayer(String playerId) {

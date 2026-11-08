@@ -9,6 +9,7 @@ import it.wsbuzz.backend.room.dto.ModeRequest;
 import it.wsbuzz.backend.room.dto.PlayerActionRequest;
 import it.wsbuzz.backend.room.dto.RoomView;
 import it.wsbuzz.backend.room.dto.ScoreRequest;
+import it.wsbuzz.backend.room.dto.TrueFalseRequest;
 import jakarta.validation.Valid;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler;
@@ -59,6 +60,12 @@ public class RoomWebSocketController {
     broadcast(code, room);
   }
 
+  @MessageMapping("/rooms/{code}/true-false")
+  public void setTrueFalse(@DestinationVariable String code, @Valid @Payload TrueFalseRequest request) {
+    RoomView room = roomService.setTrueFalse(code, request.requesterId(), request.trueFalse());
+    broadcast(code, room);
+  }
+
   @MessageMapping("/rooms/{code}/choice")
   public void selectChoice(@DestinationVariable String code, @Valid @Payload ChoiceRequest request) {
     RoomView room = roomService.selectChoice(code, request.playerId(), request.choice());
@@ -97,6 +104,13 @@ public class RoomWebSocketController {
   public void adjustScore(@DestinationVariable String code, @Valid @Payload ScoreRequest request) {
     RoomView room =
         roomService.adjustScore(code, request.requesterId(), request.playerId(), request.delta());
+    broadcast(code, room);
+  }
+
+  @MessageMapping("/rooms/{code}/score/reset")
+  public void resetScores(
+      @DestinationVariable String code, @Valid @Payload PlayerActionRequest request) {
+    RoomView room = roomService.resetScores(code, request.playerId());
     broadcast(code, room);
   }
 

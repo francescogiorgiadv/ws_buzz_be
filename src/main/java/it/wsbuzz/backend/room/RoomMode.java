@@ -13,4 +13,9 @@ public enum RoomMode {
   DEFINITIONS,
   /** Il buzzer e' sostituito da quattro risposte (A/B/C/D) tra cui scegliere. */
   MULTIPLE_CHOICE,
+  /**
+   * Il buzzer e' sostituito da due sole risposte (A/B), che l'host puo'
+   * mostrare come Vero/Falso.
+   */
+  BINARY_CHOICE,
 }

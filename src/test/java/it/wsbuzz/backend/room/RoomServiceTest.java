@@ -135,6 +135,57 @@ class RoomServiceTest {
   }
 
   @Test
+  void resetScores_setsEveryScoreToZero_andIsHostOnly() {
+    RoomJoinedResponse created = roomService.createRoom("Host");
+    String code = created.room().code();
+    RoomJoinedResponse p1 = roomService.joinRoom(code, "Player 1");
+    RoomJoinedResponse p2 = roomService.joinRoom(code, "Player 2");
+    roomService.adjustScore(code, created.playerId(), p1.playerId(), 1);
+    roomService.adjustScore(code, created.playerId(), p2.playerId(), -1);
+
+    assertThatThrownBy(() -> roomService.resetScores(code, p1.playerId()))
+        .isInstanceOf(InvalidRoomOperationException.class);
+    RoomView result = roomService.resetScores(code, created.playerId());
+
+    assertThat(result.players()).allSatisfy(p -> assertThat(p.score()).isZero());
+  }
+
+  @Test
+  void binaryChoice_acceptsOnlyAOrB_andTrueFalseIsHostOnly() {
+    RoomJoinedResponse created = roomService.createRoom("Host");
+    String code = created.room().code();
+    RoomJoinedResponse p1 = roomService.joinRoom(code, "Player 1");
+    RoomJoinedResponse p2 = roomService.joinRoom(code, "Player 2");
+    roomService.setMode(code, created.playerId(), RoomMode.BINARY_CHOICE);
+
+    assertThatThrownBy(() -> roomService.selectChoice(code, p1.playerId(), "C"))
+        .isInstanceOf(InvalidRoomOperationException.class);
+    roomService.selectChoice(code, p2.playerId(), "B");
+    assertThatThrownBy(() -> roomService.setTrueFalse(code, p1.playerId(), true))
+        .isInstanceOf(InvalidRoomOperationException.class);
+    RoomView result = roomService.setTrueFalse(code, created.playerId(), true);
+
+    assertThat(result.trueFalse()).isTrue();
+    assertThat(result.players())
+        .filteredOn(p -> p.id().equals(p2.playerId()))
+        .singleElement()
+        .satisfies(p -> assertThat(p.choice()).isEqualTo("B"));
+  }
+
+  @Test
+  void setMode_toDifferentMode_clearsChoices() {
+    RoomJoinedResponse created = roomService.createRoom("Host");
+    String code = created.room().code();
+    RoomJoinedResponse joined = roomService.joinRoom(code, "Player 1");
+    roomService.setMode(code, created.playerId(), RoomMode.MULTIPLE_CHOICE);
+    roomService.selectChoice(code, joined.playerId(), "D");
+
+    RoomView result = roomService.setMode(code, created.playerId(), RoomMode.BINARY_CHOICE);
+
+    assertThat(result.players()).allSatisfy(p -> assertThat(p.choice()).isNull());
+  }
+
+  @Test
   void leaveRoom_hostLeaving_closesRoom() {
     RoomJoinedResponse created = roomService.createRoom("Host");
     String code = created.room().code();

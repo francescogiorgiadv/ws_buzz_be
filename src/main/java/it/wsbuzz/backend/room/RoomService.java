@@ -88,6 +88,15 @@ public class RoomService {
     return room.snapshot();
   }
 
+  /** Scelta binaria: risposte mostrate come Vero/Falso ({@code true}) o A/B. Solo host. */
+  public RoomView setTrueFalse(String code, String requesterId, boolean trueFalse) {
+    Room room = requireRoom(code);
+    requireHost(room, requesterId);
+    room.setTrueFalse(trueFalse);
+    log.info("Etichette scelta binaria: code={} host={} trueFalse={}", code, requesterId, trueFalse);
+    return room.snapshot();
+  }
+
   public RoomView updateDefinition(String code, String playerId, String text) {
     Room room = requireRoom(code);
     room.updateDefinition(playerId, text);
@@ -150,6 +159,15 @@ public class RoomService {
         requesterId,
         targetPlayerId,
         delta);
+    return room.snapshot();
+  }
+
+  /** Azzera i punteggi di tutti i concorrenti. Solo host. */
+  public RoomView resetScores(String code, String requesterId) {
+    Room room = requireRoom(code);
+    requireHost(room, requesterId);
+    room.resetScores();
+    log.info("Punteggi azzerati: code={} host={}", code, requesterId);
     return room.snapshot();
   }
 

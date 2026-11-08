@@ -13,4 +13,5 @@ public record RoomView(
     long createdAt,
     boolean locked,
     RoomMode mode,
+    boolean trueFalse,
     List<PlayerView> players) {}
